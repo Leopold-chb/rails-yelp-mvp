@@ -1,0 +1,191 @@
+<!-- Statistiques -->
+<div class="row mb-5 g-4">
+  <div class="col-md-4">
+    <div class="card bg-danger text-white border-0">
+      <div class="card-body text-center p-4">
+        <div class="mb-3" style="font-size: 3rem;">🍽️</div>
+        <h2 class="display-3 fw-bold mb-2"><%= @total_restaurants %></h2>
+        <p class="mb-0 fs-5 fw-semibold">Restaurants</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-warning text-dark border-0">
+      <div class="card-body text-center p-4">
+        <div class="mb-3" style="font-size: 3rem;">⭐</div>
+        <h2 class="display-3 fw-bold mb-2"><%= @total_reviews %></h2>
+        <p class="mb-0 fs-5 fw-semibold">Avis</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-success text-white border-0">
+      <div class="card-body text-center p-4">
+        <div class="mb-3" style="font-size: 3rem;">🏷️</div>
+        <h2 class="display-3 fw-bold mb-2"><%= @categories.count %></h2>
+        <p class="mb-0 fs-5 fw-semibold">Catégories</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Restaurants populaires -->
+<% if @top_restaurants.any? && @top_restaurants.any? { |r| r.average_rating > 0 } %>
+  <div class="card border-0 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="card-body p-4 text-white">
+      <h3 class="fw-bold mb-4 text-white">⭐ Restaurants les mieux notés</h3>
+      <div class="row g-3">
+        <% @top_restaurants.select { |r| r.average_rating > 0 }.first(3).each do |restaurant| %>
+          <div class="col-md-4">
+            <div class="card border-0 bg-white shadow-soft">
+              <div class="card-body p-3">
+                <h6 class="fw-bold mb-2 text-dark"><%= restaurant.name %></h6>
+                <div class="mb-2">
+                  <%= display_stars(restaurant.average_rating, size: "fs-6") %>
+                </div>
+                <p class="text-muted small mb-2">
+                  <%= restaurant.reviews_count %> avis
+                </p>
+                <%= link_to "Voir →", restaurant_path(restaurant), class: "btn btn-sm btn-danger mt-2" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Barre de recherche et filtres -->
+<div class="card border-0 mb-5 shadow-soft">
+  <div class="card-body p-4">
+    <div class="row g-3">
+      <div class="col-md-12 mb-4">
+        <h2 class="fw-bold mb-0 text-gradient" style="font-size: 2rem;">🍽️ Tous les restaurants</h2>
+      </div>
+
+      <!-- Recherche -->
+      <div class="col-md-6">
+        <%= form_with url: restaurants_path, method: :get, local: true, class: "d-flex" do |f| %>
+          <%= f.text_field :search,
+              value: params[:search],
+              placeholder: "Rechercher un restaurant...",
+              class: "form-control form-control-lg me-2" %>
+          <%= f.hidden_field :category, value: params[:category] %>
+          <%= f.hidden_field :sort_by, value: params[:sort_by] %>
+          <%= f.submit "🔍", class: "btn btn-danger btn-lg" %>
+        <% end %>
+      </div>
+
+      <!-- Filtre par catégorie -->
+      <div class="col-md-3">
+        <%= form_with url: restaurants_path, method: :get, local: true do |f| %>
+          <%= f.select :category,
+              options_for_select([
+                ["Toutes les catégories", ""],
+                ["🥢 Chinois", "chinese"],
+                ["🍝 Italien", "italian"],
+                ["🍣 Japonais", "japanese"],
+                ["🥖 Français", "french"],
+                ["🍺 Belge", "belgian"]
+              ], params[:category]),
+              {},
+              { class: "form-select form-select-lg", onchange: "this.form.submit()" } %>
+          <%= f.hidden_field :search, value: params[:search] %>
+          <%= f.hidden_field :sort_by, value: params[:sort_by] %>
+        <% end %>
+      </div>
+
+      <!-- Tri -->
+      <div class="col-md-3">
+        <%= form_with url: restaurants_path, method: :get, local: true do |f| %>
+          <%= f.select :sort_by,
+              options_for_select([
+                ["Plus récents", "created_at"],
+                ["Nom (A-Z)", "name"],
+                ["Meilleure note", "rating_desc"],
+                ["Note croissante", "rating_asc"],
+                ["Plus d'avis", "reviews_desc"]
+              ], params[:sort_by] || "created_at"),
+              {},
+              { class: "form-select form-select-lg", onchange: "this.form.submit()" } %>
+          <%= f.hidden_field :search, value: params[:search] %>
+          <%= f.hidden_field :category, value: params[:category] %>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Résultats -->
+    <div class="mt-3">
+      <p class="text-muted mb-0">
+        <%= pluralize(@restaurants.count, "restaurant") %> trouvé<%= "s" if @restaurants.count > 1 %>
+        <% if params[:search].present? %>
+          pour "<strong><%= params[:search] %></strong>"
+        <% end %>
+        <% if params[:category].present? %>
+          dans la catégorie <strong><%= category_with_emoji(params[:category]) %></strong>
+        <% end %>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Liste des restaurants -->
+<% if @restaurants.empty? %>
+  <div class="text-center py-5">
+    <div class="mb-4">
+      <span style="font-size: 5rem;">🍴</span>
+    </div>
+    <h3 class="text-muted">Aucun restaurant trouvé</h3>
+    <p class="text-muted">Essayez de modifier vos critères de recherche</p>
+    <%= link_to "Voir tous les restaurants", restaurants_path, class: "btn btn-danger btn-lg mt-3" %>
+  </div>
+<% else %>
+  <div class="row g-4">
+    <% @restaurants.each do |restaurant| %>
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <span class="badge bg-danger">
+                <%= category_with_emoji(restaurant.category) %>
+              </span>
+              <% if restaurant.average_rating > 0 %>
+                <div class="text-end">
+                  <%= display_stars(restaurant.average_rating, size: "fs-6") %>
+                  <small class="text-muted d-block">
+                    <%= pluralize(restaurant.reviews_count, "avis") %>
+                  </small>
+                </div>
+              <% else %>
+                <span class="badge bg-secondary">Aucun avis</span>
+              <% end %>
+            </div>
+
+            <h5 class="card-title fw-bold mb-3"><%= restaurant.name %></h5>
+
+            <div class="mb-3 flex-grow-1">
+              <p class="text-muted mb-2 small">
+                <strong>📍</strong> <%= truncate(restaurant.address, length: 50) %>
+              </p>
+              <p class="text-muted mb-0 small">
+                <strong>📞</strong> <%= restaurant.phone_number %>
+              </p>
+            </div>
+
+            <%= link_to restaurant_path(restaurant), class: "btn btn-outline-danger mt-auto" do %>
+              Voir les détails →
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<!-- Bouton ajouter -->
+<div class="text-center mt-5">
+  <%= link_to new_restaurant_path, class: "btn btn-danger btn-lg shadow-sm px-5" do %>
+    ➕ Ajouter un restaurant
+  <% end %>
+</div>

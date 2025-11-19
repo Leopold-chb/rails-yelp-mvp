@@ -1,0 +1,170 @@
+<div class="mb-4">
+  <%= link_to restaurants_path, class: "btn btn-outline-secondary" do %>
+    ← Retour à la liste
+  <% end %>
+</div>
+
+<div class="card border-0 mb-5 shadow-soft" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);">
+  <div class="card-body p-5">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div class="flex-grow-1">
+        <span class="badge bg-danger fs-6 mb-3 px-3 py-2">
+          <%= category_with_emoji(@restaurant.category) %>
+        </span>
+        <h1 class="display-4 fw-bold mb-3 text-gradient"><%= @restaurant.name %></h1>
+
+        <!-- Note moyenne -->
+        <% if @restaurant.average_rating > 0 %>
+          <div class="mb-3">
+            <%= display_stars(@restaurant.average_rating, size: "fs-4") %>
+            <span class="text-muted ms-2">
+              (<%= pluralize(@restaurant.reviews_count, "avis") %>)
+            </span>
+          </div>
+        <% else %>
+          <div class="mb-3">
+            <span class="badge bg-secondary fs-6">Aucun avis pour le moment</span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    <hr>
+    <div class="row mt-4">
+      <div class="col-md-6 mb-3">
+        <p class="mb-1">
+          <strong class="text-muted">📍 Adresse:</strong><br>
+          <span class="fs-5"><%= @restaurant.address %></span>
+        </p>
+      </div>
+      <div class="col-md-6 mb-3">
+        <p class="mb-1">
+          <strong class="text-muted">📞 Téléphone:</strong><br>
+          <span class="fs-5"><%= @restaurant.phone_number %></span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Statistiques des avis -->
+<% if @restaurant.reviews.any? %>
+  <div class="card border-0 mb-5 shadow-soft" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+    <div class="card-body p-4 text-white">
+      <h4 class="fw-bold mb-4 text-white">📊 Statistiques des avis</h4>
+      <div class="row">
+        <div class="col-md-3 text-center mb-3">
+          <div class="fs-1 fw-bold text-white mb-2"><%= @restaurant.average_rating.round(1) %></div>
+          <div class="text-white opacity-75">Note moyenne</div>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+          <div class="fs-1 fw-bold text-white mb-2"><%= @restaurant.reviews_count %></div>
+          <div class="text-white opacity-75">Total d'avis</div>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+          <div class="fs-1 fw-bold text-white mb-2">
+            <%= @restaurant.reviews.where("rating >= 4").count %>
+          </div>
+          <div class="text-white opacity-75">Avis positifs (≥4★)</div>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+          <div class="fs-1 fw-bold text-white mb-2">
+            <%= @restaurant.reviews.maximum(:rating) || 0 %>
+          </div>
+          <div class="text-white opacity-75">Meilleure note</div>
+        </div>
+      </div>
+
+      <!-- Distribution des notes -->
+      <div class="mt-4 pt-4" style="border-top: 1px solid rgba(255,255,255,0.3);">
+        <h5 class="fw-bold mb-4 text-white">Distribution des notes</h5>
+        <% (5.downto(1)).each do |rating| %>
+          <% count = @restaurant.reviews.where(rating: rating).count %>
+          <% percentage = @restaurant.reviews_count > 0 ? (count.to_f / @restaurant.reviews_count * 100).round : 0 %>
+          <div class="mb-2">
+            <div class="d-flex align-items-center">
+              <span class="me-2" style="width: 60px;">
+                <%= rating %>★
+              </span>
+              <div class="progress flex-grow-1" style="height: 25px;">
+                <div class="progress-bar bg-warning text-dark" role="progressbar"
+                     style="width: <%= percentage %>%"
+                     aria-valuenow="<%= percentage %>"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                  <%= count %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold">💬 Avis</h2>
+  <span class="badge bg-secondary fs-6">
+    <%= pluralize(@restaurant.reviews_count, "avis") %>
+  </span>
+</div>
+
+<% if @restaurant.reviews.any? %>
+  <div class="mb-5">
+    <% @restaurant.reviews.order(created_at: :desc).each do |review| %>
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="d-flex align-items-center">
+              <div class="me-3">
+                <% review.rating.times do %>
+                  <span class="fs-4 text-warning">★</span>
+                <% end %>
+                <% (5 - review.rating).times do %>
+                  <span class="fs-4 text-muted">★</span>
+                <% end %>
+              </div>
+              <span class="badge bg-warning text-dark fs-6">
+                <%= review.rating %>/5
+              </span>
+            </div>
+            <small class="text-muted">
+              <%= time_ago_in_words(review.created_at) %> ago
+            </small>
+          </div>
+          <p class="card-text mb-0 fs-5"><%= review.content %></p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="card shadow-sm border-0 mb-5">
+    <div class="card-body text-center py-5">
+      <div class="mb-3">
+        <span style="font-size: 4rem;">💭</span>
+      </div>
+      <h4 class="text-muted">Aucun avis pour le moment</h4>
+      <p class="text-muted">Soyez le premier à donner votre avis !</p>
+    </div>
+  </div>
+<% end %>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-4">
+    <h3 class="fw-bold mb-4">✍️ Ajouter un avis</h3>
+    <%= simple_form_for [@restaurant, @review], html: { class: "needs-validation" } do |f| %>
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <%= f.input :rating, label: "Note", collection: (1..5).to_a, prompt: "Sélectionnez une note", wrapper_html: { class: "mb-3" }, input_html: { class: "form-select form-select-lg" } %>
+        </div>
+        <div class="col-md-12 mb-4">
+          <%= f.input :content, label: "Commentaire", as: :text, placeholder: "Partagez votre expérience...", input_html: { rows: 4, class: "form-control form-control-lg" } %>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <%= f.submit "Ajouter l'avis", class: "btn btn-danger btn-lg px-4" %>
+        <%= link_to "Annuler", restaurant_path(@restaurant), class: "btn btn-outline-secondary btn-lg" %>
+      </div>
+    <% end %>
+  </div>
+</div>
